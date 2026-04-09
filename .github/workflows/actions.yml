@@ -1,0 +1,188 @@
+name: Grading
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  grade:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v5
+        with:
+          java-version: "25"
+          distribution: "temurin"
+          cache: maven
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+
+      - name: Parse assignment tag from commit message
+        id: tag
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const msg = ((context.payload.head_commit && context.payload.head_commit.message) || '').toLowerCase();
+            const i = msg.indexOf(':');
+            const tag = i > 0 ? msg.slice(0, i).trim() : '';
+            core.setOutput('value', tag);
+
+      - name: Require tag prefix
+        run: |
+          if [ -z "${{ steps.tag.outputs.value }}" ]; then
+            echo "::error::Commit message must start with '<assignment-tag>: ' (e.g. echo-chat: add server loop)."
+            exit 1
+          fi
+
+      - name: Require tag weights
+        run: |
+          if [ ! -f .github/tag-weights.json ]; then
+            echo "::error::Missing .github/tag-weights.json"
+            exit 1
+          fi
+
+      - name: Run tests by group and score
+        id: score
+        env:
+          TASK_TAG: ${{ steps.tag.outputs.value }}
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          import subprocess
+          import xml.etree.ElementTree as ET
+          from glob import glob
+          from pathlib import Path
+
+          def parse_reports(report_dir: Path):
+              total_tests = 0
+              total_failures = 0
+              total_errors = 0
+              total_skipped = 0
+              for path in glob(str(report_dir / "TEST-*.xml")):
+                  try:
+                      root = ET.parse(path).getroot()
+                  except Exception:
+                      continue
+                  suites = [root] if root.tag == "testsuite" else root.findall("testsuite")
+                  for suite in suites:
+                      total_tests += int(suite.attrib.get("tests", 0))
+                      total_failures += int(suite.attrib.get("failures", 0))
+                      total_errors += int(suite.attrib.get("errors", 0))
+                      total_skipped += int(suite.attrib.get("skipped", 0))
+              ran = max(total_tests - total_skipped, 0)
+              passed = max(ran - total_failures - total_errors, 0)
+              return ran, passed, total_failures, total_errors, total_skipped
+
+          tag = os.environ.get("TASK_TAG", "").strip()
+          if not tag:
+              raise SystemExit("TASK_TAG is empty")
+
+          weights = json.loads(Path(".github/tag-weights.json").read_text(encoding="utf-8"))
+          tag_weights = weights.get(tag)
+          if not isinstance(tag_weights, dict) or not tag_weights:
+              raise SystemExit(f"No entry for tag '{tag}' in .github/tag-weights.json")
+
+          total_score = 0
+          parts = {}
+          for suffix, max_score in sorted(tag_weights.items(), key=lambda kv: int(kv[0])):
+              group = f"{tag}-{suffix}"
+              report_dir = Path("target") / "surefire-reports"
+              if report_dir.exists():
+                  for p in report_dir.glob("*"):
+                      try:
+                          if p.is_file():
+                              p.unlink()
+                      except Exception:
+                          pass
+              subprocess.run(
+                  ["mvn", "-B", f"-Dgroups={group}", "test"],
+                  check=False,
+              )
+              ran, passed, failures, errors, skipped = parse_reports(report_dir)
+              if int(max_score) > 0 and ran == 0:
+                  raise SystemExit(f"No tests ran for group '{group}'")
+              score = int((passed / ran) * int(max_score)) if ran > 0 else 0
+              total_score += score
+              parts[group] = {
+                  "ran": ran,
+                  "passed": passed,
+                  "failures": failures,
+                  "errors": errors,
+                  "skipped": skipped,
+                  "score": score,
+                  "max": int(max_score),
+              }
+
+          Path(".github/score-parts.json").write_text(json.dumps(parts, ensure_ascii=False, indent=2), encoding="utf-8")
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as f:
+              f.write(f"score={total_score}\n")
+          PY
+
+      - name: Job summary
+        run: |
+          score="${{ steps.score.outputs.score }}"
+          echo "## Score: **$score**" >> "$GITHUB_STEP_SUMMARY"
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          path = Path(".github/score-parts.json")
+          if not path.exists():
+              raise SystemExit("Missing .github/score-parts.json")
+          parts = json.loads(path.read_text(encoding="utf-8"))
+          lines = [
+              "| Group | Passed | Ran | Score | Max |",
+              "|-------|--------|-----|-------|-----|",
+          ]
+          for group, v in parts.items():
+              lines.append(
+                  f"| {group} | {v['passed']} | {v['ran']} | {v['score']} | {v['max']} |"
+              )
+          text = "\n".join(lines)
+          print(text)
+          Path(".github/step_summary_table.md").write_text(text, encoding="utf-8")
+          PY
+          cat .github/step_summary_table.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Write grading-result.json
+        env:
+          TASK_TAG: ${{ steps.tag.outputs.value }}
+          TOTAL_SCORE: ${{ steps.score.outputs.score }}
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          parts = json.loads(Path(".github/score-parts.json").read_text(encoding="utf-8"))
+          max_score = sum(int(v.get("max", 0)) for v in parts.values())
+          payload = {
+              "student": os.environ.get("GITHUB_ACTOR", ""),
+              "repository": os.environ.get("GITHUB_REPOSITORY", ""),
+              "task_tag": os.environ.get("TASK_TAG", ""),
+              "score": int(os.environ.get("TOTAL_SCORE", "0") or 0),
+              "max_score": max_score,
+              "run_id": os.environ.get("GITHUB_RUN_ID", ""),
+              "sha": os.environ.get("GITHUB_SHA", ""),
+          }
+          Path("grading-result.json").write_text(
+              json.dumps(payload, ensure_ascii=False, indent=2),
+              encoding="utf-8",
+          )
+          PY
+
+      - name: Upload grading-result artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: grading-result
+          path: grading-result.json
