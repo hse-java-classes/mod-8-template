@@ -23,6 +23,8 @@
 hs_err_pid*
 replay_pid*
 
+# Локальные материалы для дизайна курса (не коммитить)
+.knowledge/
 .claire
 .claude
 .idea

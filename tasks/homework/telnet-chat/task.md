@@ -104,12 +104,9 @@ Alice> Привет!
 - Все операции над общим состоянием (список комнат, участники) потокобезопасны
 - Несколько сотен одновременных подключений не вызывают деградации
 
-## Технические ограничения
-
-- Только стандартная библиотека Java (`java.net`, `java.io`, `java.util.concurrent`)
-- Класс сервера: `hse.java.TelnetChatServer`
-- Точка входа: `public static void main(String[] args)`, порт = `Integer.parseInt(args[0])`
-- Никаких фреймворков
+### Стек
+- Только стандартная библиотека Java (`java.net`, `java.io`, `java.util.concurrent`); без фреймворков.
+- Класс сервера: `hse.java.TelnetChatServer`; точка входа `public static void main(String[] args)`.
 
 ---
 

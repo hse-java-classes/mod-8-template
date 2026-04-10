@@ -1,4 +1,4 @@
-# HSE Java Extended — Модуль 4–8
+# HSE Java Extended — Модуль 8
 
 Шаблон репозитория для курса [Java Extended](agenda.md).
 
@@ -6,7 +6,8 @@
 
 ```
 src/main/java/hse/java/   — ваш код
-tasks/<название>/task.md  — описание задачи
+tasks/homework/<название>/task.md  — описание задачи на домашнюю работу
+tasks/classwork/<название>/task.md  — описание задачи на работу в группе 
 ```
 
 ## Сдача задания
@@ -15,8 +16,3 @@ tasks/<название>/task.md  — описание задачи
 2. Сделайте коммит с тегом задачи в начале сообщения — подробнее в [README-commit-format.md](README-commit-format.md)
 3. Запушьте в `main` — CI запустит тесты и покажет баллы во вкладке **Actions → Summary**
 
-## Зависимости
-
-- Java 25
-- Maven 3
-- JUnit 5, Lombok (уже в `pom.xml`)
