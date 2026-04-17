@@ -107,6 +107,5 @@ Alice> Привет!
 ### Стек
 - Только стандартная библиотека Java (`java.net`, `java.io`, `java.util.concurrent`); без фреймворков.
 - Класс сервера: `hse.java.TelnetChatServer`; точка входа `public static void main(String[] args)`.
-
 ---
 

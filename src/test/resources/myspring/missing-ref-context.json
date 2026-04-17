@@ -1,0 +1,11 @@
+{
+  "beans": [
+    {
+      "id": "broken",
+      "class": "hse.java.myspring.fixtures.UserService",
+      "constructorArgs": [
+        { "ref": "nonexistent" }
+      ]
+    }
+  ]
+}

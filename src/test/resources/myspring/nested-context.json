@@ -1,0 +1,17 @@
+{
+  "beans": [
+    {
+      "id": "repo",
+      "class": "hse.java.myspring.fixtures.Repository"
+    },
+    {
+      "id": "serviceNested",
+      "class": "hse.java.myspring.fixtures.UserService",
+      "constructorArgs": [
+        {
+          "class": "hse.java.myspring.fixtures.Repository"
+        }
+      ]
+    }
+  ]
+}

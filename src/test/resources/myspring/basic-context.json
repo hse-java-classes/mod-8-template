@@ -1,0 +1,19 @@
+{
+  "beans": [
+    {
+      "id": "simple",
+      "class": "hse.java.myspring.fixtures.SimpleBean"
+    },
+    {
+      "id": "repo",
+      "class": "hse.java.myspring.fixtures.Repository"
+    },
+    {
+      "id": "service",
+      "class": "hse.java.myspring.fixtures.UserService",
+      "constructorArgs": [
+        { "ref": "repo" }
+      ]
+    }
+  ]
+}
