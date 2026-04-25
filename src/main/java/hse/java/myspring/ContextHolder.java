@@ -13,6 +13,7 @@ public class ContextHolder {
      * @throws RuntimeException если файл не найден или содержит ошибки
      */
     public static ApplicationContext getApplicationContext(String path) {
+
         throw new UnsupportedOperationException("TODO: реализуйте загрузку контекста из JSON");
     }
 

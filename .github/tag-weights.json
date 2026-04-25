@@ -13,5 +13,61 @@
     "5": 1,
     "6": 1,
     "7": 1
+  },
+  "chat-spring-data": {
+    "1": 2,
+    "2": 2
+  },
+  "chat-stomp": {
+    "1": 2,
+    "2": 2,
+    "3": 2
+  },
+  "docker-compose": {
+    "1": 2,
+    "2": 3
+  },
+  "moderation-service": {
+    "1": 2,
+    "2": 2
+  },
+  "myspring-ioc": {
+    "1": 2,
+    "2": 3
+  },
+  "oauth-login": {
+    "1": 1,
+    "2": 2
+  },
+  "rest-countries-tests": {
+    "1": 2,
+    "2": 2
+  },
+  "sql-queries": {
+    "1": 1,
+    "2": 2
+  },
+  "chat-history": {
+    "1": 2,
+    "2": 3
+  },
+  "chat-jdbctemplate": {
+    "1": 2,
+    "2": 3
+  },
+  "chat-unit-tests": {
+    "1": 2,
+    "2": 2,
+    "3": 2
+  },
+  "myspring-annotations": {
+    "1": 2,
+    "2": 2,
+    "3": 3
+  },
+  "social-lk": {
+    "1": 2,
+    "2": 2,
+    "3": 2
   }
 }
